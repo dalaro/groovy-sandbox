@@ -99,6 +99,11 @@
       <id>github-pages</id>
       <url>gitsite:git@github.com/jenkinsci/${project.artifactId}.git</url>
     </site>
+    <snapshotRepository>
+        <id>snapshots</id>
+        <name>datastax-snapshots</name>
+        <url>https://datastax.jfrog.io/datastax/libs-snapshots-local</url>
+    </snapshotRepository>
   </distributionManagement>
 
   <reporting>
