@@ -20,7 +20,7 @@ abstract class InvokerChain implements Invoker {
         if (receiver==null)
             chain = EMPTY_ITERATOR;
         else
-            chain = GroovyInterceptor.getApplicableInterceptors().iterator();
+            chain = InterceptorRegistry.getInstance().getApplicableInterceptors();
     }
 
     private static final Iterator<GroovyInterceptor> EMPTY_ITERATOR = Collections.<GroovyInterceptor>emptyList().iterator();

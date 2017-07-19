@@ -4,6 +4,7 @@ import junit.framework.TestCase
 import org.codehaus.groovy.control.CompilerConfiguration
 
 import org.kohsuke.groovy.sandbox.SandboxTransformer
+import org.kohsuke.groovy.sandbox.impl.InterceptorRegistry
 
 /**
  *
@@ -22,12 +23,13 @@ class RobotTest extends TestCase {
         def binding = new Binding();
         binding.robot = robot = new Robot();
         sh = new GroovyShell(binding,cc)
-        sandbox.register()
+
+        InterceptorRegistry.getInstance().register(sandbox);
     }
 
     @Override
     protected void tearDown() {
-        sandbox.unregister()
+        InterceptorRegistry.getInstance().unregister(sandbox);
     }
 
     void assertFail(String script) {

@@ -4,6 +4,8 @@ import org.codehaus.groovy.control.customizers.ImportCustomizer
 import org.codehaus.groovy.runtime.NullObject
 import org.codehaus.groovy.runtime.ProxyGeneratorAdapter
 import org.jvnet.hudson.test.Issue
+import org.kohsuke.groovy.sandbox.impl.InterceptorRegistry
+
 import java.awt.Point
 import junit.framework.TestCase
 import org.codehaus.groovy.control.CompilerConfiguration
@@ -28,6 +30,7 @@ class TheTest extends TestCase {
         cc.addCompilationCustomizers(new ImportCustomizer().addImports(TheTest.class.name).addStarImports("org.kohsuke.groovy.sandbox"))
         plain = new GroovyShell(binding,cc)
 
+        InterceptorRegistry.getInstance().register(cr);
     }
 
     private void initVars() {
@@ -44,14 +47,12 @@ class TheTest extends TestCase {
      */
     def interceptedEval(String expression) {
         cr.reset()
-        cr.register();
+
         try {
             initVars()
             return sh.evaluate(expression);
         } catch (Exception e) {
             throw new Exception("Failed to evaluate "+expression,e)
-        } finally {
-            cr.unregister();
         }
     }
 

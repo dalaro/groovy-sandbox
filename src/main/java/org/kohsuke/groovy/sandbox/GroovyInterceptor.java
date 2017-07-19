@@ -1,5 +1,6 @@
 package org.kohsuke.groovy.sandbox;
 
+import org.kohsuke.groovy.sandbox.impl.InterceptorRegistry;
 import org.kohsuke.groovy.sandbox.impl.Super;
 
 import java.util.Collections;
@@ -179,7 +180,7 @@ public abstract class GroovyInterceptor {
         Object call(Object receiver, String method, Object arg1, Object arg2) throws Throwable;
         Object call(Object receiver, String method, Object... args) throws Throwable;
     }
-    
+
 //    public void addToGlobal() {
 //        globalInterceptors.add(this);
 //    }
@@ -190,35 +191,18 @@ public abstract class GroovyInterceptor {
 
     /**
      * Registers this interceptor to the current thread's interceptor list.
+     * @deprecated use: InterceptorRegistry
      */
     public void register() {
-        threadInterceptors.get().add(this);
+        InterceptorRegistry.getInstance().registerThreadLocal(this);
     }
 
     /**
      * Reverses the earlier effect of {@link #register()}
+     * @deprecated use: InterceptorRegistry
      */
     public void unregister() {
-        threadInterceptors.get().remove(this);
+        InterceptorRegistry.getInstance().unregisterThreadLocal(this);
     }
 
-    private static final ThreadLocal<List<GroovyInterceptor>> threadInterceptors = new ThreadLocal<List<GroovyInterceptor>>() {
-        @Override
-        protected List<GroovyInterceptor> initialValue() {
-            return new CopyOnWriteArrayList<GroovyInterceptor>();
-        }
-    };
-
-    private static final ThreadLocal<List<GroovyInterceptor>> threadInterceptorsView = new ThreadLocal<List<GroovyInterceptor>>() {
-        @Override
-        protected List<GroovyInterceptor> initialValue() {
-            return Collections.unmodifiableList(threadInterceptors.get());
-        }
-    };
-    
-//    private static final List<GroovyInterceptor> globalInterceptors = new CopyOnWriteArrayList<GroovyInterceptor>();
-    
-    public static List<GroovyInterceptor> getApplicableInterceptors() {
-        return threadInterceptorsView.get();
-    }
 }

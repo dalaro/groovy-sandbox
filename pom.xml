@@ -87,18 +87,7 @@
     </dependency>
   </dependencies>
 
-  <scm>
-    <connection>scm:git:git@github.com/jenkinsci/${project.artifactId}.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com/jenkinsci/${project.artifactId}.git</developerConnection>
-    <url>http://${project.artifactId}.kohsuke.org/</url>
-    <tag>HEAD</tag>
-  </scm>
-
   <distributionManagement>
-    <site>
-      <id>github-pages</id>
-      <url>gitsite:git@github.com/jenkinsci/${project.artifactId}.git</url>
-    </site>
     <snapshotRepository>
         <id>snapshots</id>
         <name>datastax-snapshots</name>
