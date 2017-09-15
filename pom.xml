@@ -93,6 +93,11 @@
         <name>datastax-snapshots</name>
         <url>https://datastax.jfrog.io/datastax/libs-snapshots-local</url>
     </snapshotRepository>
+    <repository>
+      <id>releases</id>
+      <name>datastax-releases</name>
+      <url>https://datastax.jfrog.io/datastax/libs-releases-local</url>
+    </repository>
   </distributionManagement>
 
   <reporting>
