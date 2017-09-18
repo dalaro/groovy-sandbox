@@ -1,13 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>org.kohsuke</groupId>
-    <artifactId>pom</artifactId>
-    <version>17</version>
-    <relativePath />
-  </parent>
 
+  <groupId>org.kohsuke</groupId>
   <artifactId>groovy-sandbox</artifactId>
   <version>1.16.DSE</version>
 
@@ -88,16 +83,16 @@
   </dependencies>
 
   <distributionManagement>
+    <repository>
+      <id>artifactory</id>
+      <name>datastax-releases</name>
+      <url>https://repo.datastax.com/datastax-releases-local</url>
+    </repository>
     <snapshotRepository>
         <id>snapshots</id>
         <name>datastax-snapshots</name>
-        <url>https://datastax.jfrog.io/datastax/libs-snapshots-local</url>
+        <url>https://repo.datastax.com/datastax-snapshots-local</url>
     </snapshotRepository>
-    <repository>
-      <id>releases</id>
-      <name>datastax-releases</name>
-      <url>https://datastax.jfrog.io/datastax/libs-releases-local</url>
-    </repository>
   </distributionManagement>
 
   <reporting>
