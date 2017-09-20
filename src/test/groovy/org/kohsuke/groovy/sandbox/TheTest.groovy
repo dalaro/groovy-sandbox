@@ -671,6 +671,44 @@ Exception.message
         assert e instanceof NullPointerException;
     }
 
+    void testCatchFinallyStatement() {
+        int y = interceptedEval("""
+            y = 1; try {def x = 2;}catch(Exception ex){} finally { y = x }
+        """);
+        assert y == 2;
+    }
+
+    void testCatchFinallyStatementException() {
+        int y = interceptedEval("""
+            y = 1; try {def x = 2;throw new Exception()} catch(Exception ex){x=3} finally { y = x }
+        """);
+        assert y == 3;
+    }
+
+    void testCatchFinallyStatementEmptyException() {
+        def e = interceptedEval("""
+            try{
+                y = 1; try {def x = 2;throw new Exception()} catch(Exception ex){} finally { y = x }
+            }
+            catch(Exception e) {
+                return e;
+            }
+        """);
+        assert e instanceof MissingPropertyException;
+    }
+
+    void testCatchFinallyExpressionStatement() {
+        interceptedEval("""
+            try {
+                y = 1
+            }
+            finally {
+                return y;
+            }
+        """);
+    }
+
+
     /**
      * Makes sure the line number in the source code is preserved after translation.
      */

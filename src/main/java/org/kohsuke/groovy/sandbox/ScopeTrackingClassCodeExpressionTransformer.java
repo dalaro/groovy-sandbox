@@ -13,12 +13,16 @@ import org.codehaus.groovy.ast.expr.VariableExpression;
 import org.codehaus.groovy.ast.stmt.BlockStatement;
 import org.codehaus.groovy.ast.stmt.CatchStatement;
 import org.codehaus.groovy.ast.stmt.DoWhileStatement;
+import org.codehaus.groovy.ast.stmt.EmptyStatement;
 import org.codehaus.groovy.ast.stmt.ForStatement;
 import org.codehaus.groovy.ast.stmt.IfStatement;
+import org.codehaus.groovy.ast.stmt.Statement;
 import org.codehaus.groovy.ast.stmt.SwitchStatement;
 import org.codehaus.groovy.ast.stmt.SynchronizedStatement;
 import org.codehaus.groovy.ast.stmt.TryCatchStatement;
 import org.codehaus.groovy.ast.stmt.WhileStatement;
+
+import java.util.Iterator;
 
 /**
  * Keeps track of in-scope variables.
@@ -132,7 +136,28 @@ abstract class ScopeTrackingClassCodeExpressionTransformer extends ClassCodeExpr
     @Override
     public void visitTryCatchFinally(TryCatchStatement statement) {
         try (StackVariableSet scope = new StackVariableSet(this)) {
-            super.visitTryCatchFinally(statement);
+            //Try catch finally blocks are part of the same scope so avoid creating new stack variables.
+            Statement tryStatement = statement.getFinallyStatement();
+            if(tryStatement instanceof BlockStatement) {
+                super.visitBlockStatement((BlockStatement) statement.getTryStatement());
+            }
+            else {
+                super.visitStatement(statement.getTryStatement());
+            }
+
+            Iterator i$ = statement.getCatchStatements().iterator();
+
+            while(i$.hasNext()) {
+                CatchStatement catchStatement = (CatchStatement)i$.next();
+                catchStatement.visit(this);
+            }
+
+            Statement finallyStatement = statement.getFinallyStatement();
+            if (finallyStatement instanceof EmptyStatement) {
+                this.visitEmptyStatement((EmptyStatement)finallyStatement);
+            } else {
+                super.visitBlockStatement((BlockStatement) statement.getFinallyStatement());
+            }
         }
     }
 
