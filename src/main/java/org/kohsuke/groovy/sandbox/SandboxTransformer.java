@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.codehaus.groovy.GroovyBugError;
 import org.codehaus.groovy.ast.ASTNode;
@@ -241,6 +242,12 @@ public class SandboxTransformer extends CompilationCustomizer {
     }
 
     class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
+        // this maximum value is for the recursive evaluation of method chains,
+        // e.g. 'blah'.toString().toString() -- the length here would be 3
+        // The value for the magic number was found by measuring the level of
+        // recursion of a traversal before we got a stack overflow error in DSE
+        // itself (it was 98 at the time of writing).
+        private static final int MAX_METHOD_CHAIN_LENGTH = 90;
         private final SourceUnit sourceUnit;
         /**
          * Invocation/property access without the left-hand side expression (for example {@code foo()}
@@ -268,6 +275,7 @@ public class SandboxTransformer extends CompilationCustomizer {
          * Current class we are traversing.
          */
         private ClassNode clazz;
+        private final AtomicInteger methodChainLength = new AtomicInteger();
 
         VisitorImpl(SourceUnit sourceUnit, ClassNode clazz) {
             this.sourceUnit = sourceUnit;
@@ -354,8 +362,26 @@ public class SandboxTransformer extends CompilationCustomizer {
                 Expression objExp;
                 if (call.isImplicitThis() && visitingClosureBody && !isLocalVariableExpression(call.getObjectExpression()))
                     objExp = CLOSURE_THIS;
-                else
-                    objExp = transform(call.getObjectExpression());
+                else {
+                    try
+                    {
+                        final int methodChainLength = this.methodChainLength.incrementAndGet();
+
+                        // this maximum is checked during evaluation, and to
+                        // avoid a stack overflow (due to deep recursions) we
+                        // check the limit and complain if this is exceeded
+                        if ( methodChainLength > MAX_METHOD_CHAIN_LENGTH )
+                        {
+                            throw new MethodChainTooLongException();
+                        }
+
+                        objExp = transform(call.getObjectExpression());
+                    }
+                    catch (StackOverflowError error)
+                    {
+                        throw new MethodChainTooLongException();
+                    }
+                }
 
                 Expression arg1 = call.getMethod();
                 Expression arg2 = transformArguments(call.getArguments());
