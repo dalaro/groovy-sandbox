@@ -3,6 +3,7 @@ package org.kohsuke.groovy.sandbox
 import org.codehaus.groovy.control.customizers.ImportCustomizer
 import org.codehaus.groovy.runtime.NullObject
 import org.codehaus.groovy.runtime.ProxyGeneratorAdapter
+import org.junit.Assert
 import org.jvnet.hudson.test.Issue
 import org.kohsuke.groovy.sandbox.impl.InterceptorRegistry
 
@@ -889,5 +890,36 @@ String a
 a = "abc"
 return a
 ''')
+    }
+
+    void testMethodTooLongToEval()
+    {
+        try {
+            interceptedEval("'blah'.toString().toString().toString()" +
+                    ".toString().toString().toString().toString().toString()" +
+                    ".toString().toString().toString().toString().toString()" +
+                    ".toString().toString().toString().toString().toString()" +
+                    ".toString().toString().toString().toString().toString()" +
+                    ".toString().toString().toString().toString().toString()" +
+                    ".toString().toString().toString().toString().toString()" +
+                    ".toString().toString().toString().toString().toString()" +
+                    ".toString().toString().toString().toString().toString()" +
+                    ".toString().toString().toString().toString().toString()" +
+                    ".toString().toString().toString().toString().toString()" +
+                    ".toString().toString().toString().toString().toString()" +
+                    ".toString().toString().toString().toString().toString()" +
+                    ".toString().toString().toString().toString().toString()" +
+                    ".toString().toString().toString().toString().toString()" +
+                    ".toString().toString().toString().toString().toString()" +
+                    ".toString().toString().toString().toString().toString()" +
+                    ".toString().toString().toString().toString().toString()" +
+                    ".toString().toString().toString().toString().toString()")
+
+            Assert.fail("Should've thrown a MethodChainTooLongException for this method chain call.")
+        }
+        catch (MethodChainTooLongException)
+        {
+            // nothing to do here, this is a good outcome
+        }
     }
 }
