@@ -2,14 +2,7 @@ package org.kohsuke.groovy.sandbox;
 
 import groovy.lang.Script;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.codehaus.groovy.GroovyBugError;
@@ -275,7 +268,6 @@ public class SandboxTransformer extends CompilationCustomizer {
          * Current class we are traversing.
          */
         private ClassNode clazz;
-        private final AtomicInteger methodChainLength = new AtomicInteger();
 
         VisitorImpl(SourceUnit sourceUnit, ClassNode clazz) {
             this.sourceUnit = sourceUnit;
@@ -318,14 +310,19 @@ public class SandboxTransformer extends CompilationCustomizer {
     
         @Override
         public Expression transform(Expression exp) {
-            Expression o = innerTransform(exp);
+            return transform(exp, 0);
+        }
+
+        public Expression transform(Expression exp, int counter)
+        {
+            Expression o = innerTransform(exp, counter);
             if (o!=exp) {
                 o.setSourcePosition(exp);
             }
             return o;
         }
 
-        private Expression innerTransform(Expression exp) {
+        private Expression innerTransform(Expression exp, int currentMethodChainLength) {
             if (exp instanceof ClosureExpression) {
                 // ClosureExpression.transformExpression doesn't visit the code inside
                 ClosureExpression ce = (ClosureExpression)exp;
@@ -365,17 +362,17 @@ public class SandboxTransformer extends CompilationCustomizer {
                 else {
                     try
                     {
-                        final int methodChainLength = this.methodChainLength.incrementAndGet();
-
                         // this maximum is checked during evaluation, and to
                         // avoid a stack overflow (due to deep recursions) we
                         // check the limit and complain if this is exceeded
-                        if ( methodChainLength > MAX_METHOD_CHAIN_LENGTH )
+                        if ( currentMethodChainLength > MAX_METHOD_CHAIN_LENGTH )
                         {
                             throw new MethodChainTooLongException();
                         }
 
-                        objExp = transform(call.getObjectExpression());
+                        // since this is all about recursions, we pass the
+                        // method chain counter back
+                        objExp = transform(call.getObjectExpression(), currentMethodChainLength + 1);
                     }
                     catch (StackOverflowError error)
                     {

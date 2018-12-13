@@ -922,4 +922,36 @@ return a
             // nothing to do here, this is a good outcome
         }
     }
+
+    void testScriptToLongButStillEvals()
+    {
+        // the point here is that individual chains would contribute to the same
+        // counter before the changes. This sort of evaluation is perfectly fine
+        // in terms of recursion and stacks because these are individual and
+        // independent from each other.
+        interceptedEval("'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n" +
+                "'blah'.toString().toString().toString().toString()\n")
+    }
 }
