@@ -4,7 +4,7 @@
 
   <groupId>org.kohsuke</groupId>
   <artifactId>groovy-sandbox</artifactId>
-  <version>1.19.DSE</version>
+  <version>1.20.DSE-SNAPSHOT</version>
 
   <name>Groovy Sandbox</name>
   <description>Executes untrusted Groovy script safely</description>
@@ -87,6 +87,22 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <!-- for test-annotations -->
+  <repositories>
+    <repository>
+      <id>jenkins-ci-releases</id>
+      <url>https://repo.jenkins-ci.org/releases/</url>
+    </repository>
+  </repositories>
+
+  <!-- for gmaven-plugin -->
+  <pluginRepositories>
+    <pluginRepository>
+      <id>jenkins-ci-releases</id>
+      <url>https://repo.jenkins-ci.org/releases/</url>
+    </pluginRepository>
+  </pluginRepositories>
 
   <distributionManagement>
     <repository>

@@ -892,66 +892,331 @@ return a
 ''')
     }
 
-    void testMethodTooLongToEval()
+    void testEvalLongMethodChain()
     {
-        try {
-            interceptedEval("'blah'.toString().toString().toString()" +
-                    ".toString().toString().toString().toString().toString()" +
-                    ".toString().toString().toString().toString().toString()" +
-                    ".toString().toString().toString().toString().toString()" +
-                    ".toString().toString().toString().toString().toString()" +
-                    ".toString().toString().toString().toString().toString()" +
-                    ".toString().toString().toString().toString().toString()" +
-                    ".toString().toString().toString().toString().toString()" +
-                    ".toString().toString().toString().toString().toString()" +
-                    ".toString().toString().toString().toString().toString()" +
-                    ".toString().toString().toString().toString().toString()" +
-                    ".toString().toString().toString().toString().toString()" +
-                    ".toString().toString().toString().toString().toString()" +
-                    ".toString().toString().toString().toString().toString()" +
-                    ".toString().toString().toString().toString().toString()" +
-                    ".toString().toString().toString().toString().toString()" +
-                    ".toString().toString().toString().toString().toString()" +
-                    ".toString().toString().toString().toString().toString()" +
-                    ".toString().toString().toString().toString().toString()")
-
-            Assert.fail("Should've thrown a MethodChainTooLongException for this method chain call.")
+        StringBuilder sb = new StringBuilder(8000);
+        sb.append("'blah'");
+        // this limit depends on the JVM stack size; this method should probably just be removed,
+        // since the test is so VM-dependent that it could break and emit meaningless failures with future JVM updates
+        for (int i = 0; i < 573; i++) {
+            sb.append(".toString()");
         }
-        catch (MethodChainTooLongException)
-        {
-            // nothing to do here, this is a good outcome
-        }
+        interceptedEval(sb.toString());
+//        interceptedEval("'blah'.toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString().toString()" +
+//                ".toString().toString().toString().toString()");
     }
 
-    void testScriptToLongButStillEvals()
-    {
-        // the point here is that individual chains would contribute to the same
-        // counter before the changes. This sort of evaluation is perfectly fine
-        // in terms of recursion and stacks because these are individual and
-        // independent from each other.
-        interceptedEval("'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n" +
-                "'blah'.toString().toString().toString().toString()\n")
+    void testEvalTooLongMethodChain() {
+        try {
+            StringBuilder sb = new StringBuilder(8000);
+            sb.append("'blah'");
+            // this limit depends on the JVM stack size; this method should probably just be removed,
+            // since the test is so VM-dependent that it could break and emit meaningless failures with future JVM updates
+            for (int i = 0; i < 574; i++) {
+                sb.append(".toString()");
+            }
+            interceptedEval(sb.toString());
+//            interceptedEval("'blah'.toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()" +
+//                    ".toString().toString().toString().toString().toString()");
+        } catch (StackOverflowError e) {
+            // swallowed
+        }
     }
 }
