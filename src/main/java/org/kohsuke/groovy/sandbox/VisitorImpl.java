@@ -239,7 +239,7 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
                     temporaryStack.push(smcc);
                 }
                 pushInReverseOrder(temporaryStack, stack);
-                return new DelegatedResult(temporaryStack.lastElement()); // X
+                return new DelegatedResult(temporaryStack.lastElement());
             }
 
             if (exp instanceof StaticMethodCallExpression && sandboxTransformer.isInterceptMethodCall()) {
@@ -250,30 +250,20 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
                 Static import handling uses StaticMethodCallExpression, and so are some
                 ASTTransformations like ToString,EqualsAndHashCode, etc.
              */
-//                StaticMethodCallExpression call = (StaticMethodCallExpression) exp;
-//                return makeCheckedCall("checkedStaticCall",
-//                        new ClassExpression(call.getOwnerType()),
-//                        new ConstantExpression(call.getMethod()),
-//                        transformArguments(call.getArguments())
-//                );
                 StaticMethodCallExpression call = (StaticMethodCallExpression) exp;
-                Stack<PseudoFrame> temporaryStack = new Stack<>();
-                PseudoFrame args = transformArgumentsWithStack(call.getArguments(), temporaryStack);
+                Stack<PseudoFrame> framesInCallOrder = new Stack<>();
+                PseudoFrame args = transformArgumentsWithStack(call.getArguments(), framesInCallOrder);
                 SimulatedMakeCheckedCall smcc = new SimulatedMakeCheckedCall("checkedStaticCall",
                         new ClassExpression(call.getOwnerType()),
                         new ConstantExpression(call.getMethod()),
                         args);
-                temporaryStack.push(smcc);
-                pushInReverseOrder(temporaryStack, stack);
-                return new DelegatedResult(temporaryStack.lastElement()); // X
+                framesInCallOrder.push(smcc);
+                pushInReverseOrder(framesInCallOrder, stack);
+                return new DelegatedResult(framesInCallOrder.lastElement());
             }
 
             if (exp instanceof MethodPointerExpression && sandboxTransformer.isInterceptMethodCall()) {
                 MethodPointerExpression mpe = (MethodPointerExpression) exp;
-//                return new ConstructorCallExpression( // TODO
-//                        new ClassNode(SandboxedMethodClosure.class),
-//                        new ArgumentListExpression(mpe.getExpression(), mpe.getMethodName())
-//                );
                 return new ActualResult(new ConstructorCallExpression( // TODO
                         new ClassNode(SandboxedMethodClosure.class),
                         new ArgumentListExpression(mpe.getExpression(), mpe.getMethodName())
@@ -283,17 +273,13 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
             if (exp instanceof ConstructorCallExpression && sandboxTransformer.isInterceptConstructor()) {
                 if (!((ConstructorCallExpression) exp).isSpecialCall()) {
                     // creating a new instance, like "new Foo(...)"
-//                    return makeCheckedCall("checkedConstructor",
-//                            new ClassExpression(exp.getType()),
-//                            transformArguments(((ConstructorCallExpression) exp).getArguments())
-//                    );
-                    Stack<PseudoFrame> temporaryStack = new Stack<>();
-                    PseudoFrame pf = transformArgumentsWithStack(((ConstructorCallExpression) exp).getArguments(), temporaryStack);
-                    temporaryStack.push(new SimulatedMakeCheckedCall("checkedConstructor",
+                    Stack<PseudoFrame> framesInCallOrder = new Stack<>();
+                    PseudoFrame pf = transformArgumentsWithStack(((ConstructorCallExpression) exp).getArguments(), framesInCallOrder);
+                    framesInCallOrder.push(new SimulatedMakeCheckedCall("checkedConstructor",
                             new ClassExpression(exp.getType()),
                             pf));
-                    pushInReverseOrder(temporaryStack, stack);
-                    return new DelegatedResult(temporaryStack.lastElement()); // X
+                    pushInReverseOrder(framesInCallOrder, stack);
+                    return new DelegatedResult(framesInCallOrder.lastElement());
                 } else {
                     // we can't really intercept constructor calling super(...) or this(...),
                     // since it has to be the first method call in a constructor.
@@ -302,13 +288,6 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
             }
 
             if (exp instanceof AttributeExpression && sandboxTransformer.isInterceptAttribute()) {
-//                AttributeExpression ae = (AttributeExpression) exp;
-//                return makeCheckedCall("checkedGetAttribute",
-//                        transform(ae.getObjectExpression()),
-//                        boolExp(ae.isSafe()),
-//                        boolExp(ae.isSpreadSafe()),
-//                        transform(ae.getProperty())
-//                );
                 AttributeExpression ae = (AttributeExpression) exp;
                 SimulatedTransform objExpr = new SimulatedTransform(ae.getObjectExpression());
                 SimulatedTransform prop = new SimulatedTransform(ae.getProperty());
@@ -320,17 +299,11 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
                 stack.push(smcc);
                 stack.push(prop);
                 stack.push(objExpr);
-                return new DelegatedResult(smcc); // X
+                return new DelegatedResult(smcc);
             }
 
             if (exp instanceof PropertyExpression && sandboxTransformer.isInterceptProperty()) {
                 PropertyExpression pe = (PropertyExpression) exp;
-//                return makeCheckedCall("checkedGetProperty",
-//                        transformObjectExpression(pe),
-//                        boolExp(pe.isSafe()),
-//                        boolExp(pe.isSpreadSafe()),
-//                        transform(pe.getProperty())
-//                );
                 SimulatedMakeCheckedCall smcc;
                 if (pe.isImplicitThis() && visitingClosureBody && !isLocalVariableExpression(pe.getObjectExpression())) {
                     SimulatedTransform p = new SimulatedTransform(pe.getProperty());
@@ -353,7 +326,7 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
                     stack.push(p);
                     stack.push(oe);
                 }
-                return new DelegatedResult(smcc); // X
+                return new DelegatedResult(smcc);
             }
 
             if (exp instanceof VariableExpression && sandboxTransformer.isInterceptProperty()) {
@@ -365,16 +338,12 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
                 } else {
                     // if the variable is not in-scope local variable, it gets treated as a property access with implicit this.
                     // see AsmClassGenerator.visitVariableExpression and processClassVariable.
-//                    PropertyExpression pexp = new PropertyExpression(VariableExpression.THIS_EXPRESSION, vexp.getName());
-//                    pexp.setImplicitThis(true);
-//                    withLoc(exp,pexp);
-//                    return transform(pexp);
                     PropertyExpression pexp = new PropertyExpression(VariableExpression.THIS_EXPRESSION, vexp.getName());
                     pexp.setImplicitThis(true);
                     withLoc(exp, pexp);
                     SimulatedTransform st = new SimulatedTransform(pexp);
                     stack.push(st);
-                    return new DelegatedResult(st); // X
+                    return new DelegatedResult(st);
                 }
             }
 
@@ -398,7 +367,6 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
                         VariableExpression vexp = (VariableExpression) lhs;
                         if (isLocalVariable(vexp.getName()) || vexp.getName().equals("this") || vexp.getName().equals("super")) {
                             // We don't care what sandboxed code does to itself until it starts interacting with outside world
-//                            return VisitorImpl.super.transform(exp);
                             return new ActualResult(VisitorImpl.super.transform(exp));
                         } else {
                             // if the variable is not in-scope local variable, it gets treated as a property access with implicit this.
@@ -422,7 +390,6 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
                                 FieldNode field = clazz != null ? clazz.getField(pe.getPropertyAsString()) : null;
                                 if (field != null) { // could also verify that it is final, but not necessary
                                     // cf. BinaryExpression.transformExpression; VisitorImpl.super.transform(exp) transforms the LHS to checkedGetProperty
-//                                    return new BinaryExpression(lhs, be.getOperation(), transform(be.getRightExpression()));
                                     return new ActualResult(new BinaryExpression(lhs, be.getOperation(), transform(be.getRightExpression())));
                                 } // else this is a property which we need to check
                             }
@@ -431,22 +398,13 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
                         }
                         if (name==null) {
                             // not intercepting?
-//                            return VisitorImpl.super.transform(exp);
                             return new ActualResult(VisitorImpl.super.transform(exp));
                         }
 
-//                        return makeCheckedCall(name,
-//                                transformObjectExpression(pe),
-//                                pe.getProperty(),
-//                                boolExp(pe.isSafe()),
-//                                boolExp(pe.isSpreadSafe()),
-//                                intExp(be.getOperation().getType()),
-//                                transform(be.getRightExpression())
-//                        );
-                        Stack<PseudoFrame> temporaryStack = new Stack<>();
-                        Object objExp = transformObjectExpressionWithStack(pe, temporaryStack);
+                        Stack<PseudoFrame> framesInCallOrder = new Stack<>();
+                        Object objExp = transformObjectExpressionWithStack(pe, framesInCallOrder);
                         SimulatedTransform rightTransform = new SimulatedTransform(be.getRightExpression());
-                        temporaryStack.push(rightTransform);
+                        framesInCallOrder.push(rightTransform);
                         SimulatedMakeCheckedCall smcc = new SimulatedMakeCheckedCall(name,
                                 objExp,
                                 pe.getProperty(),
@@ -454,27 +412,19 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
                                 boolExp(pe.isSpreadSafe()),
                                 intExp(be.getOperation().getType()),
                                 rightTransform);
-                        temporaryStack.push(smcc);
-                        pushInReverseOrder(temporaryStack, stack);
-                        return new DelegatedResult(temporaryStack.lastElement()); // X
+                        framesInCallOrder.push(smcc);
+                        pushInReverseOrder(framesInCallOrder, stack);
+                        return new DelegatedResult(framesInCallOrder.lastElement());
                     } else
                     if (lhs instanceof FieldExpression) {
                         // while javadoc of FieldExpression isn't very clear,
                         // AsmClassGenerator maps this to GETSTATIC/SETSTATIC/GETFIELD/SETFIELD access.
                         // not sure how we can intercept this, so skipping this for now
-//                        return VisitorImpl.super.transform(exp);
                         return new ActualResult(VisitorImpl.super.transform(exp));
                     } else
                     if (lhs instanceof BinaryExpression) {
                         BinaryExpression lbe = (BinaryExpression) lhs;
                         if (lbe.getOperation().getType()== Types.LEFT_SQUARE_BRACKET && sandboxTransformer.isInterceptArray()) {// expression of the form "x[y] = z"
-//                            return makeCheckedCall("checkedSetArray",
-//                                    transform(lbe.getLeftExpression()),
-//                                    transform(lbe.getRightExpression()),
-//                                    intExp(be.getOperation().getType()),
-//                                    transform(be.getRightExpression())
-//                            );
-
                             SimulatedTransform lbeLeft = new SimulatedTransform(lbe.getLeftExpression());
                             SimulatedTransform lbeRight = new SimulatedTransform(lbe.getRightExpression());
                             SimulatedTransform beRight = new SimulatedTransform(be.getRightExpression());
@@ -488,17 +438,13 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
                             stack.push(beRight);
                             stack.push(lbeRight);
                             stack.push(lbeLeft);
-                            return new DelegatedResult(smcc); // X
+                            return new DelegatedResult(smcc);
                         }
                     } else
                         throw new AssertionError("Unexpected LHS of an assignment: " + lhs.getClass());
                 }
                 if (be.getOperation().getType()==Types.LEFT_SQUARE_BRACKET) {// array reference
                     if (sandboxTransformer.isInterceptArray()) {
-//                        return makeCheckedCall("checkedGetArray",
-//                                transform(be.getLeftExpression()),
-//                                transform(be.getRightExpression())
-//                        );
                         SimulatedTransform left = new SimulatedTransform(be.getLeftExpression());
                         SimulatedTransform right = new SimulatedTransform(be.getRightExpression());
                         SimulatedMakeCheckedCall smcc = new SimulatedMakeCheckedCall(
@@ -508,30 +454,19 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
                         stack.push(smcc);
                         stack.push(right);
                         stack.push(left);
-                        return new DelegatedResult(smcc); // X
+                        return new DelegatedResult(smcc);
                     }
 
                 } else
                 if (be.getOperation().getType()==Types.KEYWORD_INSTANCEOF) {// instanceof operator
-//                    return VisitorImpl.super.transform(exp);
                     return new ActualResult(VisitorImpl.super.transform(exp));
                 } else
                 if (Ops.isLogicalOperator(be.getOperation().getType())) {
-//                    return VisitorImpl.super.transform(exp);
                     return new ActualResult(VisitorImpl.super.transform(exp));
                 } else
                 if (be.getOperation().getType()==Types.KEYWORD_IN) {// membership operator: JENKINS-28154
                     // This requires inverted operand order:
                     // "a in [...]" -> "[...].isCase(a)"
-//                    if (sandboxTransformer.isInterceptMethodCall())
-//                        return makeCheckedCall("checkedCall",
-//                                transform(be.getRightExpression()),
-//                                boolExp(false),
-//                                boolExp(false),
-//                                stringExp("isCase"),
-//                                transform(be.getLeftExpression())
-//
-//                        );
                     if (sandboxTransformer.isInterceptMethodCall()) {
                         SimulatedTransform left = new SimulatedTransform(be.getLeftExpression());
                         SimulatedTransform right = new SimulatedTransform(be.getRightExpression());
@@ -542,21 +477,15 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
                                 boolExp(false),
                                 stringExp("isCase"),
                                 left);
-
                         stack.push(smcc);
                         stack.push(left);
                         stack.push(right);
-                        return new DelegatedResult(smcc); // X
+                        return new DelegatedResult(smcc);
                     }
                 } else
                 if (Ops.isRegexpComparisonOperator(be.getOperation().getType())) {
                     if (sandboxTransformer.isInterceptMethodCall())
                     {
-//                        return makeCheckedCall("checkedStaticCall",
-//                                classExp(ScriptBytecodeAdapterClass),
-//                                stringExp(Ops.binaryOperatorMethods(be.getOperation().getType())),
-//                                transform(be.getLeftExpression()),
-//                                transform(be.getRightExpression()));
                         SimulatedTransform left = new SimulatedTransform(be.getLeftExpression());
                         SimulatedTransform right = new SimulatedTransform(be.getRightExpression());
                         SimulatedMakeCheckedCall smcc = new SimulatedMakeCheckedCall(
@@ -565,20 +494,14 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
                                 stringExp(Ops.binaryOperatorMethods(be.getOperation().getType())),
                                 left,
                                 right);
-
                         stack.push(smcc);
                         stack.push(right);
                         stack.push(left);
-                        return new DelegatedResult(smcc); // X
+                        return new DelegatedResult(smcc);
                     }
                 } else
                 if (Ops.isComparisionOperator(be.getOperation().getType())) {
                     if (sandboxTransformer.isInterceptMethodCall()) {
-//                        return makeCheckedCall("checkedComparison",
-//                                transform(be.getLeftExpression()),
-//                                intExp(be.getOperation().getType()),
-//                                transform(be.getRightExpression())
-//                        );
                         SimulatedTransform left = new SimulatedTransform(be.getLeftExpression());
                         SimulatedTransform right = new SimulatedTransform(be.getRightExpression());
                         SimulatedMakeCheckedCall smcc = new SimulatedMakeCheckedCall(
@@ -586,21 +509,15 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
                                 left,
                                 intExp(be.getOperation().getType()),
                                 right);
-
                         stack.push(smcc);
                         stack.push(right);
                         stack.push(left);
-                        return new DelegatedResult(smcc); // X
+                        return new DelegatedResult(smcc);
                     }
                 } else
                 if (sandboxTransformer.isInterceptMethodCall()) {
                     // normally binary operators like a+b
 //                    // TODO: check what other weird binary operators land here
-//                    return makeCheckedCall("checkedBinaryOp",
-//                            transform(be.getLeftExpression()),
-//                            intExp(be.getOperation().getType()),
-//                            transform(be.getRightExpression())
-//                    );
                     SimulatedTransform left = new SimulatedTransform(be.getLeftExpression());
                     SimulatedTransform right = new SimulatedTransform(be.getRightExpression());
                     SimulatedMakeCheckedCall smcc = new SimulatedMakeCheckedCall(
@@ -612,52 +529,41 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
                     stack.push(smcc);
                     stack.push(right);
                     stack.push(left);
-                    return new DelegatedResult(smcc); // X
+                    return new DelegatedResult(smcc);
                 }
             }
 
             if (exp instanceof PostfixExpression) {
                 PostfixExpression pe = (PostfixExpression) exp;
-//                return prefixPostfixExp(exp, pe.getExpression(), pe.getOperation(), "Postfix");
-                Stack<PseudoFrame> temporaryStack = new Stack<>();
-                prefixPostfixExpWithStack(exp, pe.getExpression(), pe.getOperation(), "Postfix", temporaryStack);
-                pushInReverseOrder(temporaryStack, stack);
-                return new DelegatedResult(temporaryStack.lastElement()); // TODO
+                Stack<PseudoFrame> framesInCallOrder = new Stack<>();
+                prefixPostfixExpWithStack(exp, pe.getExpression(), pe.getOperation(), "Postfix", framesInCallOrder);
+                pushInReverseOrder(framesInCallOrder, stack);
+                return new DelegatedResult(framesInCallOrder.lastElement());
             }
             if (exp instanceof PrefixExpression) {
                 PrefixExpression pe = (PrefixExpression) exp;
-//                return prefixPostfixExp(exp, pe.getExpression(), pe.getOperation(), "Prefix");
-                Stack<PseudoFrame> temporaryStack = new Stack<>();
-                prefixPostfixExpWithStack(exp, pe.getExpression(), pe.getOperation(), "Prefix", temporaryStack);
-                pushInReverseOrder(temporaryStack, stack);
-                return new DelegatedResult(temporaryStack.lastElement()); // TODO
+                Stack<PseudoFrame> framesInCallOrder = new Stack<>();
+                prefixPostfixExpWithStack(exp, pe.getExpression(), pe.getOperation(), "Prefix", framesInCallOrder);
+                pushInReverseOrder(framesInCallOrder, stack);
+                return new DelegatedResult(framesInCallOrder.lastElement());
             }
 
             if (exp instanceof CastExpression) {
                 CastExpression ce = (CastExpression) exp;
-//                return makeCheckedCall("checkedCast",
-//                        classExp(exp.getType()),
-//                        transform(ce.getExpression()),
-//                        boolExp(ce.isIgnoringAutoboxing()),
-//                        boolExp(ce.isCoerce()),
-//                        boolExp(ce.isStrict())
-//                );
-                SimulatedTransform cest = new SimulatedTransform(ce.getExpression());
+                SimulatedTransform st = new SimulatedTransform(ce.getExpression());
                 SimulatedMakeCheckedCall smcc = new SimulatedMakeCheckedCall(
                         "checkedCast",
                         classExp(exp.getType()),
-                        cest,
+                        st,
                         boolExp(ce.isIgnoringAutoboxing()),
                         boolExp(ce.isCoerce()),
                         boolExp(ce.isStrict()));
-
                 stack.push(smcc);
-                stack.push(cest);
-                return new DelegatedResult(smcc); // X
+                stack.push(st);
+                return new DelegatedResult(smcc);
             }
 
-//            return VisitorImpl.super.transform(exp);
-            return new ActualResult(VisitorImpl.super.transform(exp)); // X
+            return new ActualResult(VisitorImpl.super.transform(exp));
         }
     }
 
@@ -745,7 +651,7 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
      * Groovy primarily uses {@link ArgumentListExpression} for this,
      * but the signature doesn't guarantee that. So this method takes care of that.
      */
-    SimulatedTransformArgumentsCall transformArgumentsWithStack(Expression e, Stack<PseudoFrame> temporaryStack) {
+    SimulatedTransformArgumentsCall transformArgumentsWithStack(Expression e, Stack<PseudoFrame> framesInCallOrder) {
 
         SimulatedTransformArgumentsCall wc;
 
@@ -755,24 +661,17 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
             for (Expression expression : expressions) {
                 SimulatedTransform st = new SimulatedTransform(expression);
                 xfs.add(st);
-                temporaryStack.add(st);
+                framesInCallOrder.add(st);
             }
             wc = new SimulatedTransformArgumentsCall(e, xfs);
-            temporaryStack.add(wc);
-//            ListIterator<SimulatedTransform> x = xfs.listIterator(xfs.size());
-//            stack.push(wc);
-//            while (x.hasPrevious()) {
-//                stack.push(x.previous());
-//            }
+            framesInCallOrder.add(wc);
         } else {
             SimulatedTransform st = new SimulatedTransform(e);
             wc = new SimulatedTransformArgumentsCall(e, Collections.singletonList(st));
-            temporaryStack.push(st);
-            temporaryStack.push(wc);
+            framesInCallOrder.push(st);
+            framesInCallOrder.push(wc);
         }
 
-//        // checkedCall expects an array
-//        return withLoc(e,new MethodCallExpression(new ListExpression(l),"toArray",new ArgumentListExpression()));
         return wc;
     }
 
@@ -802,7 +701,7 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
                 new ArgumentListExpression(arguments));
     }
 
-    private Object prefixPostfixExpWithStack(Expression whole, Expression atom, Token opToken, String mode, Stack<PseudoFrame> temporaryStack) {
+    private Object prefixPostfixExpWithStack(Expression whole, Expression atom, Token opToken, String mode, Stack<PseudoFrame> framesInCallOrder) {
         String op = opToken.getText().equals("++") ? "next" : "previous";
 
         // a[b]++
@@ -813,15 +712,10 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
                     left,
                     right,
                     stringExp(op));
-            temporaryStack.push(left);
-            temporaryStack.push(right);
-            temporaryStack.push(smcc);
+            framesInCallOrder.push(left);
+            framesInCallOrder.push(right);
+            framesInCallOrder.push(smcc);
             return smcc;
-//            return makeCheckedCall("checked" + mode + "Array",
-//                    transform(((BinaryExpression) atom).getLeftExpression()),
-//                    transform(((BinaryExpression) atom).getRightExpression()),
-//                    stringExp(op)
-//            );
         }
 
         // a++
@@ -841,28 +735,16 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
                             new ConstantExpression(0)
                     ));
                     SimulatedTransform st = new SimulatedTransform(e);
-                    temporaryStack.push(st);
+                    framesInCallOrder.push(st);
                     return st;
-//                    return transform(withLoc(whole,new BinaryExpression(
-//                            new ListExpression(Arrays.asList(
-//                                    atom,
-//                                    new BinaryExpression(atom, SandboxTransformer.ASSIGNMENT_OP,
-//                                            withLoc(atom,new MethodCallExpression(atom,op,EMPTY_ARGUMENTS)))
-//                            )),
-//                            new Token(Types.LEFT_SQUARE_BRACKET, "[", -1,-1),
-//                            new ConstantExpression(0)
-//                    )));
                 } else {
                     // ++a -> a=a.next()
                     Expression e = withLoc(whole,new BinaryExpression(atom,SandboxTransformer.ASSIGNMENT_OP,
                             withLoc(atom,new MethodCallExpression(atom,op,EMPTY_ARGUMENTS)))
                     );
                     SimulatedTransform st = new SimulatedTransform(e);
-                    temporaryStack.push(st);
+                    framesInCallOrder.push(st);
                     return st;
-//                    return transform(withLoc(whole,new BinaryExpression(atom,SandboxTransformer.ASSIGNMENT_OP,
-//                            withLoc(atom,new MethodCallExpression(atom,op,EMPTY_ARGUMENTS)))
-//                    ));
                 }
             } else {
                 // if the variable is not in-scope local variable, it gets treated as a property access with implicit this.
@@ -879,22 +761,15 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
         // a.b++
         if (atom instanceof PropertyExpression && sandboxTransformer.isInterceptProperty()) {
             PropertyExpression pe = (PropertyExpression) atom;
-            Object oe = transformObjectExpressionWithStack(pe, temporaryStack);
+            Object oe = transformObjectExpressionWithStack(pe, framesInCallOrder);
             SimulatedMakeCheckedCall smcc = new SimulatedMakeCheckedCall("checked" + mode + "Property",
                     oe,
                     pe.getProperty(),
                     boolExp(pe.isSafe()),
                     boolExp(pe.isSpreadSafe()),
                     stringExp(op));
-            temporaryStack.push(smcc);
+            framesInCallOrder.push(smcc);
             return smcc;
-//            return makeCheckedCall("checked" + mode + "Property",
-//                    transformObjectExpression(pe),
-//                    pe.getProperty(),
-//                    boolExp(pe.isSafe()),
-//                    boolExp(pe.isSpreadSafe()),
-//                    stringExp(op)
-//            );
         }
 
         return whole;
