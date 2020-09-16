@@ -16,12 +16,7 @@ import static org.codehaus.groovy.syntax.Types.ASSIGNMENT_OPERATOR;
 import static org.codehaus.groovy.syntax.Types.ofType;
 
 public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
-    // this maximum value is for the recursive evaluation of method chains,
-    // e.g. 'blah'.toString().toString() -- the length here would be 3
-    // The value for the magic number was found by measuring the level of
-    // recursion of a traversal before we got a stack overflow error in DSE
-    // itself (it was 98 at the time of writing).
-    private static final int MAX_METHOD_CHAIN_LENGTH = 90;
+
     private final SourceUnit sourceUnit;
     /**
      * Invocation/property access without the left-hand side expression (for example {@code foo()}
@@ -62,6 +57,75 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
         ListIterator<T> i = source.listIterator(source.size());
         while (i.hasPrevious()) {
             sink.push(i.previous());
+        }
+    }
+
+    @Override
+    public void visitMethod(MethodNode node) {
+        if (clazz == null) { // compatibility
+            clazz = node.getDeclaringClass();
+        }
+        super.visitMethod(node);
+    }
+
+    @Override
+    public Expression transform(Expression exp) {
+        final Stack<PseudoFrame> stack = new Stack<>();
+        stack.push(new SimulatedTransform(exp));
+
+        PseudoFrame current = null;
+
+        while (!stack.empty()) {
+            current = stack.pop();
+            current.evaluateAndRecordResult(stack);
+        }
+
+        return null != current ? current.getResult() : exp;
+    }
+
+    abstract static class PseudoFrame {
+
+        private PseudoFrameResult fr;
+
+        private final Throwable creation;
+
+        private static final boolean RECORD_CREATION_STACKTRACE;
+        private static final String PROP_NAME = "DEBUG_SANDBOX_STACK";
+
+        static {
+            boolean b = false;
+            try {
+                b = Boolean.parseBoolean(System.getProperty(PROP_NAME));
+            } catch (Throwable t) {
+                System.err.println("Unable to get system property " + PROP_NAME + ": " + t.getMessage());
+                t.printStackTrace();
+            }
+            RECORD_CREATION_STACKTRACE = b;
+        }
+
+        public PseudoFrame() {
+            if (RECORD_CREATION_STACKTRACE) {
+                this.creation = new Throwable();
+            } else {
+                this.creation = null;
+            }
+        }
+
+        protected abstract PseudoFrameResult internalEvaluate(Stack<PseudoFrame> stack);
+
+        public void evaluateAndRecordResult(Stack<PseudoFrame> stack) {
+            fr = internalEvaluate(stack);
+        }
+
+        public boolean isEvaluated() {
+            return null != fr;
+        }
+
+        public Expression getResult() {
+            if (null != fr && fr.isReady()) {
+                return fr.getResult();
+            }
+            throw new IllegalStateException("Corrupted sandbox stack: FrameResolution=" + fr, creation);
         }
     }
 
@@ -597,58 +661,83 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
         }
     }
 
-    abstract static class PseudoFrame {
+    class SimulatedTransformArgumentsCall extends PseudoFrame {
 
-        private PseudoFrameResult fr;
+        private final Expression expression;
+        private final List<SimulatedTransform> sts;
 
-        private final Throwable creation;
+        public SimulatedTransformArgumentsCall(Expression expression, List<SimulatedTransform> sts) {
+            super();
+            this.expression = expression;
+            this.sts = sts;
+        }
 
-        private static final boolean RECORD_CREATION_STACKTRACE;
-        private static final String PROP_NAME = "DEBUG_SANDBOX_STACK";
+        @Override
+        public PseudoFrameResult internalEvaluate(Stack<PseudoFrame> stack) {
+            List<Expression> exprs = new ArrayList<>(sts.size());
 
-        static {
-            boolean b = false;
-            try {
-                b = Boolean.parseBoolean(System.getProperty(PROP_NAME));
-            } catch (Throwable t) {
-                System.err.println("Unable to get system property " + PROP_NAME + ": " + t.getMessage());
-                t.printStackTrace();
+            for (SimulatedTransform st : sts)
+            {
+                exprs.add(st.getResult());
             }
-            RECORD_CREATION_STACKTRACE = b;
-        }
 
-        public PseudoFrame() {
-            if (RECORD_CREATION_STACKTRACE) {
-                this.creation = new Throwable();
-            } else {
-                this.creation = null;
-            }
-        }
-
-        protected abstract PseudoFrameResult internalEvaluate(Stack<PseudoFrame> stack);
-
-        public void evaluateAndRecordResult(Stack<PseudoFrame> stack) {
-            fr = internalEvaluate(stack);
-        }
-
-        public boolean isEvaluated() {
-            return null != fr;
-        }
-
-        public Expression getResult() {
-            if (null != fr && fr.isReady()) {
-                return fr.getResult();
-            }
-            throw new IllegalStateException("Corrupted sandbox stack: FrameResolution=" + fr, creation);
+            return new ActualResult(withLoc(expression, new MethodCallExpression(new ListExpression(exprs),
+                    "toArray", new ArgumentListExpression())));
         }
     }
 
-    @Override
-    public void visitMethod(MethodNode node) {
-        if (clazz == null) { // compatibility
-            clazz = node.getDeclaringClass();
+    private interface PseudoFrameResult {
+        Expression getResult();
+
+        boolean isReady();
+    }
+
+    /**
+     * A fully-computed result {@link Expression}
+     *
+     * @see DelegatedResult
+     */
+    private static class ActualResult implements PseudoFrameResult {
+
+        private final Expression result;
+
+        public ActualResult(Expression result) {
+            this.result = result;
         }
-        super.visitMethod(node);
+
+        @Override
+        public Expression getResult() {
+            return result;
+        }
+
+        @Override
+        public boolean isReady() {
+            return true;
+        }
+    }
+
+    /**
+     * A lazily-computed result {@link Expression}
+     *
+     * {@link #getResult()} may only be called after evaluation of the delegate passed to this class's constructor
+     *
+     * @see ActualResult
+     */
+    private static class DelegatedResult implements PseudoFrameResult {
+        private final PseudoFrame delegate;
+
+        public DelegatedResult(PseudoFrame delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public Expression getResult() {
+            return delegate.getResult();
+        }
+
+        @Override public boolean isReady() {
+            return delegate.isEvaluated();
+        }
     }
 
     /**
@@ -687,31 +776,6 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
         return wc;
     }
 
-    class SimulatedTransformArgumentsCall extends PseudoFrame {
-
-        private final Expression expression;
-        private final List<SimulatedTransform> sts;
-
-        public SimulatedTransformArgumentsCall(Expression expression, List<SimulatedTransform> sts) {
-            super();
-            this.expression = expression;
-            this.sts = sts;
-        }
-
-        @Override
-        public PseudoFrameResult internalEvaluate(Stack<PseudoFrame> stack) {
-            List<Expression> exprs = new ArrayList<>(sts.size());
-
-            for (SimulatedTransform st : sts)
-            {
-                exprs.add(st.getResult());
-            }
-
-            return new ActualResult(withLoc(expression, new MethodCallExpression(new ListExpression(exprs),
-                    "toArray", new ArgumentListExpression())));
-        }
-    }
-
     /**
      * Transforms the arguments of a call.
      * Groovy primarily uses {@link ArgumentListExpression} for this,
@@ -736,21 +800,6 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
     Expression makeCheckedCall(String name, Expression... arguments) {
         return new StaticMethodCallExpression(sandboxTransformer.getCheckerClass(),name,
                 new ArgumentListExpression(arguments));
-    }
-
-    @Override
-    public Expression transform(Expression exp) {
-        final Stack<PseudoFrame> stack = new Stack<>();
-        stack.push(new SimulatedTransform(exp));
-
-        PseudoFrame current = null;
-
-        while (!stack.empty()) {
-            current = stack.pop();
-            current.evaluateAndRecordResult(stack);
-        }
-
-        return null != current ? current.getResult() : exp;
     }
 
     private Object prefixPostfixExpWithStack(Expression whole, Expression atom, Token opToken, String mode, Stack<PseudoFrame> temporaryStack) {
@@ -851,60 +900,6 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
         return whole;
     }
 
-    private interface PseudoFrameResult {
-        Expression getResult();
-
-        boolean isReady();
-    }
-
-    /**
-     * A fully-computed result {@link Expression}
-     *
-     * @see DelegatedResult
-     */
-    private static class ActualResult implements PseudoFrameResult {
-
-        private final Expression result;
-
-        public ActualResult(Expression result) {
-            this.result = result;
-        }
-
-        @Override
-        public Expression getResult() {
-            return result;
-        }
-
-        @Override
-        public boolean isReady() {
-            return true;
-        }
-    }
-
-    /**
-     * A lazily-computed result {@link Expression}
-     *
-     * {@link #getResult()} may only be called after evaluation of the delegate passed to this class's constructor
-     *
-     * @see ActualResult
-     */
-    private static class DelegatedResult implements PseudoFrameResult {
-        private final PseudoFrame delegate;
-
-        public DelegatedResult(PseudoFrame delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public Expression getResult() {
-            return delegate.getResult();
-        }
-
-        @Override public boolean isReady() {
-            return delegate.isEvaluated();
-        }
-    }
-
     /**
      * Decorates an {@link ASTNode} by copying source location from another node.
      */
@@ -912,17 +907,6 @@ public class VisitorImpl extends ScopeTrackingClassCodeExpressionTransformer {
         t.setSourcePosition(src);
         return t;
     }
-
-    /**
-     * See {@link #visitingClosureBody} for the details of what this method is about.
-     */
-//    private Expression transformObjectExpression(PropertyExpression exp) {
-//        if (exp.isImplicitThis() && visitingClosureBody && !isLocalVariableExpression(exp.getObjectExpression())) {
-//            return SandboxTransformer.CLOSURE_THIS;
-//        } else {
-//            return transform(exp.getObjectExpression());
-//        }
-//    }
 
     /**
      * See {@link #visitingClosureBody} for the details of what this method is about.
